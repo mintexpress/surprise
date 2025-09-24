@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>For Francesca 💘</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Great+Vibes&display=swap');
+
+    :root{
+      /* Romantic palette */
+      --bg-top: #ffdee9;
+      --bg-mid: #f9c5d1;
+      --bg-bottom: #ffe9f3;
+
+      --wood-color: #b56576;   /* Soft rosewood */
+      --rope-color: #f2c6de;   /* Blush rope */
+      --text-color: #a4133c;   /* Deep rose */
+      --panel-bg: rgba(255,255,255,0.6);
+      --panel-border: #fff;
+
+      --key-bg: #ffffff;
+      --key-shadow: #e7a4b8;
+      --key-hover: #ffe0ea;
+      --key-correct: #ffbfd0;
+      --key-wrong: #ffd9e6;
+
+      --confetti-colors: #ff4d6d, #ff758f, #faa2c1, #e599f7, #c77dff, #ffb3c7, #ffc9de;
+    }
+
+    /* Background */
+    body{
+      margin:0;
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 50%, var(--bg-bottom) 100%);
+      font-family: 'Fredoka One', cursive;
+      overflow:hidden;
+      perspective:1000px;
+    }
+
+    /* Soft floating backdrop pattern */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-20% -20% -20% -20%;
+      background:
+        radial-gradient(closest-side, rgba(255,77,109,0.07), transparent 60%) 10% 15%/180px 180px,
+        radial-gradient(closest-side, rgba(255,117,143,0.07), transparent 60%) 70% 30%/220px 220px,
+        radial-gradient(closest-side, rgba(250,162,193,0.06), transparent 60%) 40% 70%/200px 200px;
+      animation: drift 60s linear infinite;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes drift{
+      0% { transform: translate3d(0,0,0) }
+      100% { transform: translate3d(-5%, -5%, 0) }
+    }
+
+    .game-container{
+      position:relative;
+      z-index:2;
+      text-align:center;
+      background: var(--panel-bg);
+      padding: 30px 28px;
+      border-radius: 28px;
+      box-shadow: 0 15px 40px rgba(164,19,60,0.18);
+      border: 5px solid var(--panel-border);
+      transform-style: preserve-3d;
+      animation: float 6s ease-in-out infinite;
+      backdrop-filter: blur(4px);
+    }
+    @keyframes float{
+      0%,100% { transform: translateY(0) rotateX(5deg) }
+      50% { transform: translateY(-16px) rotateX(-5deg) }
+    }
+
+    h1{
+      font-family: 'Great Vibes', cursive;
+      color: var(--text-color);
+      font-size: 3.2em;
+      line-height: 1;
+      margin: 0 0 10px 0;
+      text-shadow: 0 3px 0 rgba(255,255,255,0.9);
+    }
+    .subtitle{
+      margin: 0 0 12px 0;
+      color: #8d2146;
+      font-size: 0.95em;
+      letter-spacing: .5px;
+      opacity:.85;
+    }
+
+    .hangman-box{
+      position:relative;
+      width:220px;
+      height:260px;
+      margin: 0 auto 10px;
+    }
+    .gallows{
+      position:absolute;
+      stroke: var(--wood-color);
+      stroke-width: 8;
+      stroke-linecap: round;
+      fill:none;
+    }
+    #gallows-base { animation: draw 1s ease-out forwards; }
+    #gallows-pole { animation: draw 1s .5s ease-out forwards; }
+    #gallows-beam { animation: draw 1s 1s ease-out forwards; }
+    #gallows-rope { animation: draw 1s 1.5s ease-out forwards; stroke: var(--rope-color); }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+
+    /* Hangman parts (19 steps) */
+    .hangman-part{
+      opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .hangman-part.visible{
+      opacity: 1;
+    }
+
+    .word-display{
+      font-size: 2.4em;
+      letter-spacing: 10px;
+      margin: 18px 0 12px;
+      color: var(--text-color);
+      height: 56px;
+    }
+    .word-display span{
+      display:inline-block;
+      border-bottom: 5px solid var(--text-color);
+      min-width: 30px;
+      text-align:center;
+      vertical-align:bottom;
+      margin: 0 5px;
+      transform: translateY(20px);
+      opacity:0;
+      transition: all .45s ease;
+    }
+    .word-display span.visible{
+      transform: translateY(0);
+      opacity:1;
+    }
+    .question-mark{
+      display:inline-block;
+      border-bottom: none !important;
+      margin-left: 10px;
+      color: var(--text-color);
+      font-weight: bold;
+      transform: translateY(-8px) scale(.6) rotate(-10deg);
+      opacity: 0;
+      animation: qm-pop .5s .2s ease-out forwards;
+    }
+    @keyframes qm-pop{
+      to { transform: translateY(0) scale(1) rotate(0deg); opacity:1; }
+    }
+
+    .keyboard{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:16px;
+      user-select:none;
+    }
+    .keyboard-row{
+      display:flex;
+      justify-content:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .key{
+      font-family: 'Fredoka One', cursive;
+      font-size:1.3em;
+      width:50px;
+      height:50px;
+      background: var(--key-bg);
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      color: var(--text-color);
+      cursor:pointer;
+      box-shadow: 0 5px 0 var(--key-shadow);
+      transition: transform .1s ease-in-out, box-shadow .1s ease-in-out, background .2s ease;
+      animation: key-pop-in .5s both;
+      border: 2px solid rgba(164,19,60,0.12);
+    }
+    .key:hover{
+      background: var(--key-hover);
+    }
+    .key:active{
+      transform: translateY(2px);
+      box-shadow: 0 3px 0 var(--key-shadow);
+    }
+    .key.correct{
+      background: var(--key-correct);
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 var(--key-shadow);
+      animation: bounce .28s ease;
+    }
+    .key.wrong{
+      background: var(--key-wrong);
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 var(--key-shadow);
+      opacity:.85;
+    }
+
+    @keyframes key-pop-in{ from{ transform: scale(0) } to{ transform: scale(1) } }
+    @keyframes bounce{
+      0%,100% { transform: translateY(3px) scale(1) }
+      50% { transform: translateY(3px) scale(1.08) }
+    }
+
+    /* Love confetti (hearts) — fully click-through fix */
+    .confetti{
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 5;
+      pointer-events: none !important;
+    }
+    .confetti, .confetti *{
+      pointer-events: none !important; /* <-- critical fix */
+    }
+    .confetti-heart{
+      position:absolute;
+      width: 14px;
+      height: 14px;
+      top: -30px;
+      opacity:0;
+      transform: rotate(45deg);
+      background: #ff4d6d;
+      border-radius: 2px;
+      filter: drop-shadow(0 4px 2px rgba(164,19,60,0.12));
+    }
+    .confetti-heart::before,
+    .confetti-heart::after{
+      content:"";
+      position:absolute;
+      width: 14px;
+      height: 14px;
+      background: inherit;
+      border-radius: 50%;
+    }
+    .confetti-heart::before{ top: -7px; left: 0; }
+    .confetti-heart::after{ top: 0; left: -7px; }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <h1>Guess the Word 💘</h1>
+
+    <div class="hangman-box" aria-hidden="true">
+      <svg width="220" height="260" viewBox="0 0 200 250">
+        <!-- Gallows -->
+        <line id="gallows-base" class="gallows" x1="10" y1="240" x2="150" y2="240" stroke-dasharray="140" stroke-dashoffset="140" />
+        <line id="gallows-pole" class="gallows" x1="50" y1="240" x2="50" y2="10" stroke-dasharray="230" stroke-dashoffset="230" />
+        <line id="gallows-beam" class="gallows" x1="46" y1="10" x2="150" y2="10" stroke-dasharray="104" stroke-dashoffset="104" />
+        <line id="gallows-rope" class="gallows" x1="150" y1="10" x2="150" y2="50" stroke-dasharray="40" stroke-dashoffset="40" />
+
+        <!-- Hangman (19 reveal steps) -->
+        <g id="hangman" stroke-linecap="round" stroke-linejoin="round" stroke="var(--text-color)" stroke-width="4" fill="none">
+          <!-- 1 --> <circle id="head" class="hangman-part" cx="150" cy="70" r="18" />
+          <!-- 2 --> <circle id="eye-left" class="hangman-part" cx="144" cy="66" r="2" fill="var(--text-color)" stroke="none" />
+          <!-- 3 --> <circle id="eye-right" class="hangman-part" cx="156" cy="66" r="2" fill="var(--text-color)" stroke="none" />
+          <!-- 4 --> <path id="mouth" class="hangman-part" d="M144 76 q6 6 12 0" />
+          <!-- 5 --> <path id="hair" class="hangman-part" d="M138 60 q12 -12 24 0" />
+          <!-- 6 --> <line id="neck" class="hangman-part" x1="150" y1="88" x2="150" y2="95" />
+          <!-- 7 --> <line id="torso" class="hangman-part" x1="150" y1="95" x2="150" y2="135" />
+          <!-- 8 --> <line id="arm-left" class="hangman-part" x1="150" y1="105" x2="130" y2="120" />
+          <!-- 9 --> <line id="arm-right" class="hangman-part" x1="150" y1="105" x2="170" y2="120" />
+          <!-- 10 --> <circle id="hand-left" class="hangman-part" cx="130" cy="120" r="3" fill="var(--text-color)" stroke="none" />
+          <!-- 11 --> <circle id="hand-right" class="hangman-part" cx="170" cy="120" r="3" fill="var(--text-color)" stroke="none" />
+          <!-- 12 --> <line id="waist" class="hangman-part" x1="145" y1="135" x2="155" y2="135" />
+          <!-- 13 --> <line id="leg-left" class="hangman-part" x1="150" y1="135" x2="138" y2="175" />
+          <!-- 14 --> <line id="leg-right" class="hangman-part" x1="150" y1="135" x2="162" y2="175" />
+          <!-- 15 --> <line id="foot-left" class="hangman-part" x1="138" y1="175" x2="128" y2="175" />
+          <!-- 16 --> <line id="foot-right" class="hangman-part" x1="162" y1="175" x2="172" y2="175" />
+          <!-- 17: chest heart -->
+          <path id="chest-heart" class="hangman-part" d="M150 112 m -4 0 c 0 -2 4 -2 4 0 c 0 -2 4 -2 4 0 c 0 3 -4 5 -4 7 c 0 -2 -4 -4 -4 -7 z" fill="#ff4d6d" stroke="none"/>
+          <!-- 18: bow tie -->
+          <g id="bow" class="hangman-part" fill="#ff758f" stroke="none">
+            <polygon points="146,94 140,98 146,102"/>
+            <polygon points="154,94 160,98 154,102"/>
+            <rect x="148.5" y="96" width="3" height="4" rx="1" fill="#ff4d6d"/>
+          </g>
+          <!-- 19: tiny bouquet near right hand -->
+          <g id="bouquet" class="hangman-part" stroke="var(--text-color)" stroke-width="2" fill="#ff4d6d">
+            <line x1="170" y1="120" x2="176" y2="112"/>
+            <line x1="170" y1="120" x2="180" y2="115"/>
+            <path d="M176 108 m -3 0 c 0 -2 3 -2 3 0 c 0 -2 3 -2 3 0 c 0 3 -3 4 -3 6 c 0 -2 -3 -3 -3 -6 z" />
+            <path d="M182 110 m -3 0 c 0 -2 3 -2 3 0 c 0 -2 3 -2 3 0 c 0 3 -3 4 -3 6 c 0 -2 -3 -3 -3 -6 z" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="word-display" id="word-display" aria-live="polite" aria-atomic="true"></div>
+    <div class="keyboard" id="keyboard" aria-label="On-screen keyboard"></div>
+  </div>
+
+  <div class="confetti" id="confetti-container" aria-hidden="true"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const wordToGuess = "HOMECOMING"; // keep your original word
+      const maxErrors = 19; // 19 errors allowed
+      const wordDisplay = document.getElementById('word-display');
+      const keyboardContainer = document.getElementById('keyboard');
+      const confettiContainer = document.getElementById('confetti-container');
+      const keysLayout = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+      const colors = ['#ff4d6d','#ff758f','#faa2c1','#e599f7','#c77dff','#ffb3c7','#ffc9de'];
+
+      let guessedLetters = new Set();
+      let wrongGuesses = 0;
+      let gameOver = false;
+
+      const partsOrder = [
+        'head','eye-left','eye-right','mouth','hair',
+        'neck','torso','arm-left','arm-right','hand-left','hand-right',
+        'waist','leg-left','leg-right','foot-left','foot-right',
+        'chest-heart','bow','bouquet'
+      ];
+
+      function $(id){ return document.getElementById(id); }
+
+      // Initialize word display and keyboard
+      function init(){
+        // Word display underscores
+        wordDisplay.innerHTML = wordToGuess
+          .split('')
+          .map(() => `<span class="letter">_</span>`)
+          .join('');
+
+        // Build keyboard
+        keysLayout.forEach((row, rowIndex) => {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'keyboard-row';
+
+          [...row].forEach((keyChar, keyIndex) => {
+            const keyElement = document.createElement('div');
+            keyElement.className = 'key';
+            keyElement.textContent = keyChar;
+            keyElement.dataset.key = keyChar;
+            keyElement.style.animationDelay = `${(rowIndex * 0.45 + keyIndex * 0.03).toFixed(2)}s`;
+            keyElement.addEventListener('click', () => handleGuess(keyChar));
+            rowDiv.appendChild(keyElement);
+          });
+
+          keyboardContainer.appendChild(rowDiv);
+        });
+
+        // Optional: type on real keyboard
+        window.addEventListener('keydown', onKeydown);
+      }
+
+      function onKeydown(e){
+        if (gameOver) return;
+        const letter = e.key.toUpperCase();
+        if (/^[A-Z]$/.test(letter)) handleGuess(letter);
+      }
+
+      // Show next hangman part on each wrong guess
+      function revealNextPart(){
+        const idx = wrongGuesses - 1; // 0-based index
+        if (idx >= 0 && idx < partsOrder.length){
+          const el = $(partsOrder[idx]);
+          if (el) el.classList.add('visible');
+        }
+      }
+
+      function handleGuess(letter){
+        if (gameOver) return;
+        const upper = letter.toUpperCase();
+        if (guessedLetters.has(upper)) return;
+
+        guessedLetters.add(upper);
+
+        // Update keyboard key styles
+        const keyElement = document.querySelector(`.key[data-key="${upper}"]`);
+        const isCorrect = wordToGuess.includes(upper);
+
+        if (keyElement){
+          keyElement.classList.add(isCorrect ? 'correct' : 'wrong');
+          keyElement.style.pointerEvents = 'none';
+        }
+
+        // Update word display for correct guesses
+        const letterSpans = wordDisplay.querySelectorAll('.letter');
+        if (isCorrect){
+          wordToGuess.split('').forEach((char, idx) => {
+            if (char === upper){
+              letterSpans[idx].textContent = upper;
+              letterSpans[idx].classList.add('visible');
+            }
+          });
+        } else {
+          // Wrong guess: increment and draw part
+          wrongGuesses++;
+          revealNextPart();
+          if (wrongGuesses >= maxErrors){
+            endGameLose();
+            return;
+          }
+        }
+
+        // Check for win
+        const won = [...wordToGuess].every(ch => guessedLetters.has(ch));
+        if (won){
+          endGameWin();
+        }
+      }
+
+      function disableAllKeys(){
+        document.querySelectorAll('.key').forEach(k => k.style.pointerEvents = 'none');
+      }
+
+      function endGameWin(){
+        gameOver = true;
+        disableAllKeys();
+        triggerConfetti();
+        showQuestionMark();
+      }
+
+      function endGameLose(){
+        gameOver = true;
+        disableAllKeys();
+        // Optionally reveal missing letters
+        const letterSpans = wordDisplay.querySelectorAll('.letter');
+        wordToGuess.split('').forEach((char, idx) => {
+          if (letterSpans[idx].textContent === '_'){
+            letterSpans[idx].textContent = char;
+            letterSpans[idx].classList.add('visible');
+          }
+        });
+      }
+
+      // Add a question mark next to the solved word
+      function showQuestionMark(){
+        if (document.getElementById('question-mark')) return;
+        const qm = document.createElement('span');
+        qm.id = 'question-mark';
+        qm.className = 'question-mark';
+        qm.textContent = '?';
+        wordDisplay.appendChild(qm);
+      }
+
+      // Confetti hearts (click-through)
+      function triggerConfetti(){
+        const count = 180;
+        for (let i=0;i<count;i++){
+          const heart = document.createElement('div');
+          heart.className = 'confetti-heart';
+          heart.style.left = `${Math.random() * 100}vw`;
+          const c = colors[Math.floor(Math.random()*colors.length)];
+          heart.style.backgroundColor = c;
+
+          const startY = -10 - Math.random()*20; // vh
+          const endY = 110;
+          const sway = (Math.random() * 40 - 20); // px
+          const duration = Math.random() * 3000 + 4200;
+          const delay = Math.random() * 800;
+
+          heart.animate([
+            { top: `${startY}vh`, opacity: 1, transform: `translateX(0px) rotate(45deg) scale(${Math.random()*0.6+0.7})` },
+            { top: `${(startY+endY)/2}vh`, opacity: 1, transform: `translateX(${sway}px) rotate(65deg) scale(${Math.random()*0.6+0.7})` },
+            { top: `${endY}vh`, opacity: 1, transform: `translateX(${sway*2}px) rotate(85deg) scale(${Math.random()*0.6+0.7})` }
+          ], {
+            duration,
+            delay,
+            easing: 'linear',
+            iterations: 1
+          }).onfinish = () => heart.remove();
+
+          confettiContainer.appendChild(heart);
+        }
+      }
+
+      init();
+    });
+  </script>
+</body>
+</html>
